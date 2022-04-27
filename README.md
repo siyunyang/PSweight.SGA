@@ -32,7 +32,7 @@ data(psdata_sga)
 # pre-specify the confounder names: X1-X20
 xname <- paste0('X',1:20)
 # pre-specify subgroups of interest by column names
-subgroup<-paste0('X',c(1,2,3, 19,20))
+subgroup<-paste0('X',c(1,2, 19,20))
 
 
 ##### Design
@@ -58,22 +58,23 @@ plot(p, base = T)
 
 
 ##### Analysis
-p1<-PSweight_sga(ps.formula=ps.form_m,subgroup=subgroup,yname="Y",data=psdata_sga,R=50,weight="overlap")
-# can specify arbitrary contrast statement for subgroup causal effects
-summary(p1,contrast = rbind(c(1,-1)))
-# test of HTE across subgroup levels
-summary(p1,het = T)
-
-# to extract the summary statistics
+p1 <- PSweight_sga(ps.formula=ps.form_m,subgroup=subgroup,yname="Y",data=psdata_sga,R=50,weight="IPW")
 # subgroup average potential outcomes by treatment arms
 p1$muhat
+
+# to extract the summary statistics
 # subgroup causal effects
-tmp <-do.call(rbind, summary(p1)$estimates)
-rownames(tmp) <- rownames(p1$muhat)
+s1 <- summary(p1)
+# test of HTE across subgroup levels
+h1 <- summary(p1, het = T)
 
 # OW-pLASSO
 p2 <- PSweight_sga(xname=xname, subgroup=subgroup, yname="Y",zname="Treatment",data=psdata_sga,R=50, method='LASSO',weight="overlap")
-summary(p2)
+s2 <- summary(p2)
+
+# create a forest plot 
+ForestPlot(list(s1), legend_label ="IPW-Main", xlab="Causal effects in Y")
+ForestPlot(list(s1, s2), legend_label = c("IPW-Main", "OW-pLASSO"), xlab="Causal effects in Y") #comparing s1 and s2
 
 # binary outcome
 psdata_sga$Y2 <- ifelse(psdata_sga$Y < 2, 0 ,1)
@@ -81,7 +82,7 @@ psdata_sga$Y2 <- ifelse(psdata_sga$Y < 2, 0 ,1)
 p <- PSweight_sga(ps.formula = ps.form_m, subgroup = subgroup,yname = "Y2", data=psdata_sga, weight="overlap")
 
 summary(p)
-summary(p,type='RR',contrast = rbind(c(1,-1),c(0.5,-1)))
+summary(p,type='RR')
 summary(p,type='OR')
 end
 ```
